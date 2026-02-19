@@ -1,0 +1,6 @@
+"""Entry point for marty-cli CLI."""
+
+from . import main
+
+if __name__ == "__main__":
+    main()

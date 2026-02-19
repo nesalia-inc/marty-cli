@@ -14,4 +14,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv build --no-sources
-      - uses: pypa/gh-action-pypi-publish@release
+      - uses: pypa/gh-action-pypi-publish@v1

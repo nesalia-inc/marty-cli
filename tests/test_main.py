@@ -2,7 +2,7 @@
 
 from typer.testing import CliRunner
 
-from marty-cli import app
+from marty_cli import app
 
 runner = CliRunner()
 

@@ -7,13 +7,14 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.scripts]
-marty-cli = "marty-cli.__main__:main"
+marty-cli = "marty_cli.__main__:main"
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
     "ruff>=0.4.0",
     "pytest-cov>=4.0",
+    "mypy>=1.0.0",
 ]
 rich = [
     "rich>=13.0.0",

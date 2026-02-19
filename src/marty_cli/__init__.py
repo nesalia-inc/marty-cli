@@ -72,17 +72,13 @@ def workflow_list(
     bundled = manager.get_bundled_workflows()
     installed = manager.get_installed_workflows()
 
-    typer.echo("Available (bundled):")
-    for wf in bundled:
-        status = "installed" if wf in installed else "not installed"
-        typer.echo(f"  - {wf} ({status})")
-
-    typer.echo("\nInstalled:")
-    if installed:
-        for wf in installed:
-            typer.echo(f"  - {wf}")
+    if bundled:
+        typer.echo("Available:")
+        for wf in bundled:
+            status = "(installed)" if wf in installed else "(not installed)"
+            typer.echo(f"  - {wf} {status}")
     else:
-        typer.echo("  (none)")
+        typer.echo("No bundled workflows available.")
 
 
 def main() -> None:

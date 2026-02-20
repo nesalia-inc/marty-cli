@@ -13,10 +13,10 @@
     <img src="https://img.shields.io/pypi/v/marty-cli" alt="PyPI Version">
   </a>
   <a href="https://pypi.org/project/marty-cli/">
-    <img src="https://img.shields.io/pypi/pyversions/marty-cli?logo=python" alt="Python">
+    <img src="https://img.shields.io/pypi/pyversions/marty-cli" alt="Python">
   </a>
   <a href="https://github.com/nesalia-inc/marty-cli/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/nesalia-inc/marty-cli/ruff?label=tests" alt="Tests">
+    <img src="https://img.shields.io/github/actions/workflow/status/nesalia-inc/marty-cli/pytest?label=tests" alt="Tests">
   </a>
   <a href="https://github.com/nesalia-inc/marty-cli/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/nesalia-inc/marty-cli" alt="License">

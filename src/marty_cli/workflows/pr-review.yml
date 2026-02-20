@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  actions: read
   id-token: write
 
 jobs:
@@ -25,28 +26,6 @@ jobs:
           app-id: ${{ secrets.MARTY_APP_ID }}
           private-key: ${{ secrets.MARTY_APP_PRIVATE_KEY }}
 
-      - name: Dismiss old Marty reviews
-        run: |
-          # Fetch existing reviews from Marty bot only
-          reviews=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
-            --jq '.[] | select(.user.type == "Bot") | .id' 2>/dev/null || echo "")
-
-          if [ -z "$reviews" ]; then
-            echo "No existing bot reviews to dismiss"
-            exit 0
-          fi
-
-          # Dismiss each bot review
-          for review_id in $reviews; do
-            echo "Dismissing review $review_id"
-            if ! gh api -X PUT repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/$review_id/dismissals \
-              -f message="New commit pushed - creating fresh review"; then
-              echo "Warning: Failed to dismiss review $review_id"
-            fi
-          done
-        env:
-          GH_TOKEN: ${{ steps.marty-token.outputs.token }}
-
       - name: Run Marty PR Review
         uses: nesalia-inc/marty-action@1.0.0
         with:
@@ -56,63 +35,91 @@ jobs:
             PR NUMBER: ${{ github.event.pull_request.number }}
             AUTHOR: ${{ github.event.pull_request.user.login }}
             TITLE: ${{ github.event.pull_request.title }}
+            PR BASE BRANCH: ${{ github.event.pull_request.base.ref }}
+            PR HEAD BRANCH: ${{ github.event.pull_request.head.ref }}
 
-            Please review this pull request comprehensively:
+            You are a Senior Developer conducting a thorough code review. Your goal is to ensure this PR is 100% ready for production.
 
-            ## Review Focus Areas
+            ## Your Mission
 
-            ### Code Quality
+            Analyze this PR as if you were a senior team member doing a final review before merge. Be thorough, practical, and constructive.
+
+            ## Critical Steps
+
+            ### 1. Analyze Previous Reviews and Comments
+            - First, check existing reviews and comments on this PR using gh commands
+            - Understand what issues were already raised
+            - Focus on NEW changes only - do NOT repeat points already addressed
+            - Mark previously raised points that are now fixed as "outdated" if possible
+
+            ### 2. Holistic Code Analysis
+            - Understand the codebase architecture before reviewing
+            - Look at related files that might be affected by these changes
+            - Check if the changes fit existing patterns and design
+            - Verify the code follows the same conventions as the rest of the codebase
+
+            ### 3. Use Available Tools
+            - Use Bash to run commands: git log, git diff, gh pr commands
+            - Use WebFetch to get up-to-date information (security vulnerabilities, best practices, documentation)
+            - Use Read tool to examine code files thoroughly
+
+            ### 4. Production Readiness Checklist
+
+            #### Code Quality
             - Code follows best practices and design patterns
             - Proper error handling and edge cases
             - No code duplication (DRY principle)
             - Clear and maintainable code structure
+            - Code follows same conventions as rest of codebase
 
-            ### Security
+            #### Security
             - No hardcoded secrets or credentials
             - Proper input validation and sanitization
-            - SQL injection and XSS vulnerabilities
+            - Check for SQL injection, XSS vulnerabilities
             - Authentication and authorization checks
             - Sensitive data handling
+            - Use WebFetch to check for known vulnerabilities in dependencies
 
-            ### Performance
+            #### Testing
+            - Verify tests exist for new functionality
+            - Check test coverage is adequate
+            - Verify edge cases are covered
+            - Check test quality and assertions
+            - Run existing tests if possible to ensure nothing breaks
+
+            #### Performance
             - Potential performance bottlenecks
             - Efficient database queries
             - Proper caching strategies
             - Resource cleanup and memory leaks
 
-            ### Testing
-            - Adequate test coverage for changes
-            - Edge cases covered
-            - Test quality and assertions
-
-            ### Documentation
+            #### Documentation
             - README updated if needed
             - Inline comments for complex logic
             - API documentation updated
             - Breaking changes documented
 
-            ## Review Output Format
+            ### 5. Review Output Guidelines
 
-            Use inline comments for specific code issues (highlight exact lines).
-            Use top-level PR comments for general observations and summary.
+            - Use inline comments for specific code issues (highlight exact lines)
+            - DO NOT post a global summary comment - it pollutes the conversation
+            - If you need to summarize, keep it brief and focused on remaining critical issues only
+            - Mark addressed points as outdated when possible
 
-            Structure your top-level comment as:
-            - **Summary**: Brief overview
-            - **Critical Issues**: Must-fix items
-            - **Recommendations**: Suggestions for improvement
-            - **Positive Notes**: Good practices observed
+            ### 6. Final Verdict
+
+            At the end, provide a brief verdict:
+            - **APPROVED** - Ready for merge
+            - **CHANGES REQUESTED** - Needs modifications before merge
+            - **COMMENTED** - Notes provided, no blocking issues
 
             Note: The PR branch is already checked out in the current working directory.
 
             Only post GitHub comments - don't submit review text as messages.
 
-            IMPORTANT: Before creating your review, check if there are already existing reviews on this PR.
-            If previous reviews exist, understand what issues were already raised and focus only on NEW changes and remaining issues.
-            Do not repeat points that were already addressed in previous commits.
-
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
-            --max-turns 25
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh api:*),WebFetch,Read,Bash(git:*)"
+            --max-turns 40
 
         env:
           ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic

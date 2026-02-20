@@ -52,16 +52,23 @@ jobs:
 
             ## ⚠️ CRITICAL: POST YOUR RESPONSE
 
-            After formulating your response, you MUST post it by using the Bash tool to execute:
+            After formulating your response, you MUST post it by using the Bash tool.
 
+            **If your response is short**, use:
             ```bash
             gh issue comment $ISSUE_NUMBER --body "Your response here"
+            ```
+
+            **If your response is long or contains special characters**, create a temporary file first:
+            ```bash
+            echo "Your multi-line response here" > /tmp/comment.txt
+            gh issue comment $ISSUE_NUMBER --body-file /tmp/comment.txt
+            rm /tmp/comment.txt
             ```
 
             **IMPORTANT:**
             - Do NOT just formulate your response internally
             - You MUST USE the Bash tool to run the gh issue comment command
-            - Replace "Your response here" with your actual response text
             - This is how your response appears on the GitHub issue
 
             ## Important Guidelines

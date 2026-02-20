@@ -1,5 +1,7 @@
 # marty-cli
 
+<img src="https://raw.githubusercontent.com/nesalia-inc/marty-cli/refs/heads/main/.github/banner.png" height="150">
+
 [![PyPI Version](https://img.shields.io/pypi/v/marty-cli)](https://pypi.org/project/marty-cli/)
 [![Python](https://img.shields.io/pypi/pyversions/marty-cli?logo=python)](https://pypi.org/project/marty-cli/)
 [![Tests](https://img.shields.io/github/actions/workflow/status/nesalia-inc/marty-cli/ruff?label=tests)](https://github.com/nesalia-inc/marty-cli/actions)

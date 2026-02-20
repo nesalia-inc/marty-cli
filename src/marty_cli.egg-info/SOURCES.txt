@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+src/marty_cli/__init__.py
+src/marty_cli/__main__.py
+src/marty_cli.egg-info/PKG-INFO
+src/marty_cli.egg-info/SOURCES.txt
+src/marty_cli.egg-info/dependency_links.txt
+src/marty_cli.egg-info/entry_points.txt
+src/marty_cli.egg-info/requires.txt
+src/marty_cli.egg-info/top_level.txt
+tests/test_main.py

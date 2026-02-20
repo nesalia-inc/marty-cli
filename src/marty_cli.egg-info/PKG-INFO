@@ -1,0 +1,59 @@
+Metadata-Version: 2.4
+Name: marty-cli
+Version: 0.1.0
+Summary: My Python CLI
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: typer>=0.12.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: ruff>=0.4.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Provides-Extra: rich
+Requires-Dist: rich>=13.0.0; extra == "rich"
+
+# marty-cli
+
+A Python CLI application created with @nesalia/create.
+
+## Requirements
+
+- Python 3.12+
+- uv (recommended) or pip
+
+## Installation
+
+```bash
+# Using uv (recommended)
+uv sync
+
+# Or using pip
+pip install -e .
+```
+
+## Usage
+
+```bash
+# Run the CLI
+marty-cli --help
+
+# Say hello
+marty-cli hello --name World
+
+# Run tests
+pytest
+```
+
+## Development
+
+```bash
+# Install dev dependencies
+uv sync --extra dev
+
+# Run linter
+ruff check .
+
+# Run tests
+pytest
+```

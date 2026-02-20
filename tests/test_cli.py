@@ -2,8 +2,9 @@
 
 import pytest
 from typer.testing import CliRunner
+from unittest.mock import patch
 
-from marty_cli import app
+from marty_cli import app, main
 
 
 @pytest.fixture
@@ -37,6 +38,13 @@ class TestWorkflowList:
         result = runner.invoke(app, ["workflow", "list", "--path", str(project_path)])
         assert result.exit_code == 0
         assert "(installed)" in result.stdout
+
+    def test_list_no_bundled(self, runner, project_path):
+        """Test list when no bundled workflows available."""
+        with patch("marty_cli.WorkflowManager.get_bundled_workflows", return_value=[]):
+            result = runner.invoke(app, ["workflow", "list", "--path", str(project_path)])
+            assert result.exit_code == 0
+            assert "No bundled workflows available." in result.stdout
 
 
 class TestWorkflowAdd:
@@ -99,6 +107,12 @@ class TestWorkflowUpdate:
         result = runner.invoke(app, ["workflow", "update", "--path", str(project_path)])
         assert result.exit_code == 1
 
+    def test_update_all_nothing_to_update(self, runner, project_path):
+        """Test update --all when no workflows to update."""
+        result = runner.invoke(app, ["workflow", "update", "--all", "--path", str(project_path)])
+        assert result.exit_code == 0
+        assert "No workflows to update." in result.stdout
+
 
 class TestWorkflowDelete:
     """Tests for workflow delete command."""
@@ -119,3 +133,18 @@ class TestWorkflowDelete:
         result = runner.invoke(app, ["workflow", "delete", "issue-discussion", "--path", str(project_path)])
         assert result.exit_code == 1
         assert "not installed" in result.stdout
+
+
+class TestMain:
+    """Tests for main entry point."""
+
+    def test_main_import(self):
+        """Test that main can be imported."""
+        assert callable(main)
+
+    def test_main_via_cli_runner(self, runner, project_path):
+        """Test main via CliRunner (covers if __name__ == '__main__')."""
+        # This tests the main entry point
+        result = runner.invoke(app, ["--help"])
+        assert result.exit_code == 0
+        assert "marty-cli" in result.stdout

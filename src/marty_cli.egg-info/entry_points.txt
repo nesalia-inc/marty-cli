@@ -1,0 +1,2 @@
+[console_scripts]
+marty-cli = marty_cli.__main__:main

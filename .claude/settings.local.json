@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit:*)",
+      "Bash(uv pip install:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(git add:*)",
+      "Bash(uv run:*)",
+      "Bash(uv sync)",
+      "Bash(uv version:*)",
+      "Bash(pre-commit run:*)",
+      "Bash(git push)"
+    ]
+  }
+}

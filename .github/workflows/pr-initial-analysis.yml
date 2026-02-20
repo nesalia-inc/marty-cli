@@ -1,0 +1,131 @@
+name: PR Initial Analysis
+
+on:
+  pull_request:
+    types: [opened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  actions: read
+  id-token: write
+
+jobs:
+  initial-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Generate Marty token
+        id: marty-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.MARTY_APP_ID }}
+          private-key: ${{ secrets.MARTY_APP_PRIVATE_KEY }}
+
+      - name: Run Marty Initial Analysis
+        uses: nesalia-inc/marty-action@1.0.0
+        with:
+          github_token: ${{ steps.marty-token.outputs.token }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            AUTHOR: ${{ github.event.pull_request.user.login }}
+            TITLE: ${{ github.event.pull_request.title }}
+            PR BODY: ${{ github.event.pull_request.body }}
+            PR BASE BRANCH: ${{ github.event.pull_request.base.ref }}
+            PR HEAD BRANCH: ${{ github.event.pull_request.head.ref }}
+
+            You are performing the INITIAL ANALYSIS of a new Pull Request. Your goal is to:
+            1. Understand what this PR does
+            2. Create the main tracking comment
+            3. Add appropriate labels
+            4. Suggest reviewers if needed
+
+            ## Your Task
+
+            ### 1. Analyze the PR
+            - Read the PR title and description
+            - Check the changed files using `gh pr diff`
+            - Understand the scope and purpose of the changes
+
+            ### 2. Create Main Tracking Comment
+            Create a comment with this structure:
+            ```bash
+            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+              -f body="$(cat << 'EOF'
+            # Marty Review #${{ github.event.pull_request.number }}
+
+            ## Overview
+            [Your summary of what this PR does - keep it concise]
+
+            ## Status
+            Initial Analysis Complete
+
+            ## Key Concerns
+            - [ ] [Initial concern 1 - if any]
+            - [ ] [Initial concern 2 - if any]
+
+            ## Initial Observations
+            - [List any initial observations about the PR]
+
+            ---
+            *Last updated: $(date -u +"%Y-%m-%d %H:%M UTC")*
+            EOF
+            )"
+            ```
+
+            **IMPORTANT**: Use the marker `[Marty Review #<PR_NUMBER>]` so you can find this comment on future runs.
+
+            ### 3. Add Labels
+            Based on your analysis, add relevant labels using:
+            ```bash
+            gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels \
+              -f labels="[]"
+            ```
+            Available labels to consider:
+            - `bug` - If this fixes a bug
+            - `enhancement` - If this adds new features
+            - `security` - If this relates to security
+            - `documentation` - If this is docs-only
+            - `refactor` - If this is refactoring
+            - `dependencies` - If this updates dependencies
+            - `wip` - Work in progress
+            - `needs-review` - Needs review
+
+            ### 4. Suggest Reviewers (Optional)
+            If you can identify appropriate reviewers based on the files changed, you can suggest them:
+            ```bash
+            gh api -X POST repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/requested_reviewers \
+              -f reviewers='["username1", "username2"]'
+            ```
+
+            ### 5. Output
+            At the end, provide a brief summary of:
+            - What the PR does
+            - Labels added
+            - Any initial concerns or observations
+            - Suggested reviewers (if any)
+
+            Note: The PR branch is already checked out in the current working directory.
+
+            Use Bash for gh commands and Read tool for examining files.
+
+          claude_args: |
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Bash(gh issue:*),Read,Bash(git:*)"
+            --max-turns 50
+
+        env:
+          ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.MINIMAX_API_KEY }}
+          ANTHROPIC_DEFAULT_SONNET_MODEL: MiniMax-M2.5
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: MiniMax-M2.5
+          ANTHROPIC_DEFAULT_OPUS_MODEL: MiniMax-M2.5

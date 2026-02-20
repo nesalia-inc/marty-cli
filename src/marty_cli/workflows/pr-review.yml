@@ -2,11 +2,15 @@ name: PR Review
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
   pull-requests: write
+  actions: read
   id-token: write
 
 jobs:
@@ -25,6 +29,40 @@ jobs:
           app-id: ${{ secrets.MARTY_APP_ID }}
           private-key: ${{ secrets.MARTY_APP_PRIVATE_KEY }}
 
+      - name: Find or create main review comment
+        id: main-comment
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          # Find existing main comment by Marty (Bot type = GitHub App)
+          COMMENT_ID=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/comments \
+            --jq '.[] | select(.user.type == "Bot" and .body | contains("'"[Marty Review #${PR_NUMBER}]"'")) | .id' 2>/dev/null || echo "")
+
+          if [ -n "$COMMENT_ID" ]; then
+            echo "Found existing main comment: $COMMENT_ID"
+            echo "comment_id=$COMMENT_ID" >> $GITHUB_OUTPUT
+            echo "action=update" >> $GITHUB_OUTPUT
+          else
+            # Create new main comment if not found (fallback)
+            COMMENT_BODY="# Marty Review #$PR_NUMBER
+
+## Status
+Initializing...
+
+---
+Last updated: $(date -u +"%Y-%m-%d %H:%M UTC")"
+
+            COMMENT_ID=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/comments \
+              -f body="$COMMENT_BODY" \
+              --jq '.id')
+
+            echo "Created new main comment: $COMMENT_ID"
+            echo "comment_id=$COMMENT_ID" >> $GITHUB_OUTPUT
+            echo "action=create" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ steps.marty-token.outputs.token }}
+
       - name: Run Marty PR Review
         uses: nesalia-inc/marty-action@1.0.0
         with:
@@ -34,59 +72,127 @@ jobs:
             PR NUMBER: ${{ github.event.pull_request.number }}
             AUTHOR: ${{ github.event.pull_request.user.login }}
             TITLE: ${{ github.event.pull_request.title }}
+            PR BASE BRANCH: ${{ github.event.pull_request.base.ref }}
+            PR HEAD BRANCH: ${{ github.event.pull_request.head.ref }}
+            MAIN COMMENT ID: ${{ steps.main-comment.outputs.comment_id }}
+            ACTION: ${{ steps.main-comment.outputs.action }} (update or create)
 
-            Please review this pull request comprehensively:
+            You are a Senior Developer conducting a thorough code review. Your goal is to ensure this PR is 100% ready for production.
 
-            ## Review Focus Areas
+            ## Your Mission
 
-            ### Code Quality
+            Analyze this PR as if you were a senior team member doing a final review before merge. Be thorough, practical, and constructive.
+
+            ## Main Comment Handling
+
+            **IMPORTANT**: There is a main review comment on this PR (ID: ${{ steps.main-comment.outputs.comment_id }}).
+            - If ACTION=update: Edit (PATCH) the existing main comment to update its content
+            - If ACTION=create: The main comment was just created, update it with your analysis
+
+            Use this command to update the main comment:
+            ```bash
+            gh api -X PATCH repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments/${{ steps.main-comment.outputs.comment_id }} \
+              -f body="$(cat << 'EOF'
+            # Marty Review #${{ github.event.pull_request.number }}
+
+            ## Overview
+            [Your summary of the PR]
+
+            ## Status
+            [In Progress / Changes Requested / Approved]
+
+            ## Key Concerns
+            - [ ] [Issue 1]
+            - [ ] [Issue 2]
+
+            ## Progress
+            - [Fixed issue]
+            - [In progress]
+
+            ---
+            *Last updated: $(date -u +"%Y-%m-%d %H:%M UTC")*
+            EOF
+            )"
+            ```
+
+            Keep the marker `[Marty Review #<PR_NUMBER>]` in the comment so it can be found on future runs.
+
+            ## Critical Steps
+
+            ### 1. Analyze Previous Reviews and Comments
+            - First, check existing reviews and comments on this PR using gh commands
+            - Understand what issues were already raised
+            - Focus on NEW changes only - do NOT repeat points already addressed
+            - Mark previously raised points that are now fixed as "outdated" if possible
+
+            ### 2. Holistic Code Analysis
+            - Understand the codebase architecture before reviewing
+            - Look at related files that might be affected by these changes
+            - Check if the changes fit existing patterns and design
+            - Verify the code follows the same conventions as the rest of the codebase
+
+            ### 3. Use Available Tools
+            - Use Bash to run commands: git log, git diff, gh pr commands
+            - Use WebFetch to get up-to-date information (security vulnerabilities, best practices, documentation)
+            - Use Read tool to examine code files thoroughly
+
+            ### 4. Production Readiness Checklist
+
+            #### Code Quality
             - Code follows best practices and design patterns
             - Proper error handling and edge cases
             - No code duplication (DRY principle)
-            - Clear and maintainable code structure
+            - Clear and maintainable structure
+            - Consistent conventions with rest of codebase
 
-            ### Security
+            #### Security
             - No hardcoded secrets or credentials
             - Proper input validation and sanitization
-            - SQL injection and XSS vulnerabilities
+            - Check for SQL injection, XSS vulnerabilities
             - Authentication and authorization checks
             - Sensitive data handling
+            - Use WebFetch to check for known vulnerabilities in dependencies
 
-            ### Performance
-            - Potential performance bottlenecks
-            - Efficient database queries
-            - Proper caching strategies
-            - Resource cleanup and memory leaks
-
-            ### Testing
-            - Adequate test coverage for changes
+            #### Testing
+            - Tests exist for new functionality
+            - Adequate test coverage
             - Edge cases covered
             - Test quality and assertions
+            - Run existing tests if possible to ensure nothing breaks
 
-            ### Documentation
+            #### Performance
+            - No potential bottlenecks
+            - Efficient database queries
+            - Proper caching strategies
+            - Resource cleanup
+
+            #### Documentation
             - README updated if needed
             - Inline comments for complex logic
             - API documentation updated
             - Breaking changes documented
 
-            ## Review Output Format
+            ### 5. Review Output Guidelines
 
-            Use inline comments for specific code issues (highlight exact lines).
-            Use top-level PR comments for general observations and summary.
+            - Update the main comment with status and key concerns
+            - Use inline comments for specific code issues (highlight exact lines)
+            - DO NOT post additional global summary comments - it pollutes the conversation
+            - Mark addressed points as outdated when possible
 
-            Structure your top-level comment as:
-            - **Summary**: Brief overview
-            - **Critical Issues**: Must-fix items
-            - **Recommendations**: Suggestions for improvement
-            - **Positive Notes**: Good practices observed
+            ### 6. Final Verdict
+
+            At the end, update the main comment with your verdict:
+            - **APPROVED** - Ready for merge
+            - **CHANGES REQUESTED** - Needs modifications before merge
+            - **COMMENTED** - Notes provided, no blocking issues
 
             Note: The PR branch is already checked out in the current working directory.
 
             Only post GitHub comments - don't submit review text as messages.
 
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
-            --max-turns 25
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh api:*),WebFetch,Read,Bash(git:*)"
+            --max-turns 100
 
         env:
           ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic

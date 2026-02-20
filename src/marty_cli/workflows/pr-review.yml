@@ -2,7 +2,11 @@ name: PR Review
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+    types: [synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -26,6 +30,40 @@ jobs:
           app-id: ${{ secrets.MARTY_APP_ID }}
           private-key: ${{ secrets.MARTY_APP_PRIVATE_KEY }}
 
+      - name: Find or create main review comment
+        id: main-comment
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          # Find existing main comment by Marty (Bot type = GitHub App)
+          COMMENT_ID=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/comments \
+            --jq '.[] | select(.user.type == "Bot" and .body | contains("'"[Marty Review #${PR_NUMBER}]"'")) | .id' 2>/dev/null || echo "")
+
+          if [ -n "$COMMENT_ID" ]; then
+            echo "Found existing main comment: $COMMENT_ID"
+            echo "comment_id=$COMMENT_ID" >> $GITHUB_OUTPUT
+            echo "action=update" >> $GITHUB_OUTPUT
+          else
+            # Create new main comment if not found (fallback)
+            COMMENT_BODY="# Marty Review #$PR_NUMBER
+
+## Status
+🔄 Initializing...
+
+---
+*Last updated: $(date -u +"%Y-%m-%d %H:%M UTC")*"
+
+            COMMENT_ID=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/comments \
+              -f body="$COMMENT_BODY" \
+              --jq '.id')
+
+            echo "Created new main comment: $COMMENT_ID"
+            echo "comment_id=$COMMENT_ID" >> $GITHUB_OUTPUT
+            echo "action=create" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ steps.marty-token.outputs.token }}
+
       - name: Run Marty PR Review
         uses: nesalia-inc/marty-action@1.0.0
         with:
@@ -37,12 +75,48 @@ jobs:
             TITLE: ${{ github.event.pull_request.title }}
             PR BASE BRANCH: ${{ github.event.pull_request.base.ref }}
             PR HEAD BRANCH: ${{ github.event.pull_request.head.ref }}
+            MAIN COMMENT ID: ${{ steps.main-comment.outputs.comment_id }}
+            ACTION: ${{ steps.main-comment.outputs.action }} (update or create)
 
             You are a Senior Developer conducting a thorough code review. Your goal is to ensure this PR is 100% ready for production.
 
             ## Your Mission
 
             Analyze this PR as if you were a senior team member doing a final review before merge. Be thorough, practical, and constructive.
+
+            ## Main Comment Handling
+
+            **IMPORTANT**: There is a main review comment on this PR (ID: ${{ steps.main-comment.outputs.comment_id }}).
+            - If ACTION=update: Edit (PATCH) the existing main comment to update its content
+            - If ACTION=create: The main comment was just created, update it with your analysis
+
+            Use this command to update the main comment:
+            ```bash
+            gh api -X PATCH repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments/${{ steps.main-comment.outputs.comment_id }} \
+              -f body="$(cat << 'EOF'
+            # Marty Review #${{ github.event.pull_request.number }}
+
+            ## Overview
+            [Your summary of the PR]
+
+            ## Status
+            [🟡 In Progress / 🔴 Changes Requested / 🟢 Approved]
+
+            ## Key Concerns
+            - [ ] [Issue 1]
+            - [ ] [Issue 2]
+
+            ## Progress
+            - ✅ [Fixed issue]
+            - 🔄 [In progress]
+
+            ---
+            *Last updated: $(date -u +"%Y-%m-%d %H:%M UTC")*
+            EOF
+            )"
+            ```
+
+            Keep the marker `[Marty Review #<PR_NUMBER>]` in the comment so it can be found on future runs.
 
             ## Critical Steps
 
@@ -69,8 +143,8 @@ jobs:
             - Code follows best practices and design patterns
             - Proper error handling and edge cases
             - No code duplication (DRY principle)
-            - Clear and maintainable code structure
-            - Code follows same conventions as rest of codebase
+            - Clear and maintainable structure
+            - Consistent conventions with rest of codebase
 
             #### Security
             - No hardcoded secrets or credentials
@@ -81,17 +155,17 @@ jobs:
             - Use WebFetch to check for known vulnerabilities in dependencies
 
             #### Testing
-            - Verify tests exist for new functionality
-            - Check test coverage is adequate
-            - Verify edge cases are covered
-            - Check test quality and assertions
+            - Tests exist for new functionality
+            - Adequate test coverage
+            - Edge cases covered
+            - Test quality and assertions
             - Run existing tests if possible to ensure nothing breaks
 
             #### Performance
-            - Potential performance bottlenecks
+            - No potential bottlenecks
             - Efficient database queries
             - Proper caching strategies
-            - Resource cleanup and memory leaks
+            - Resource cleanup
 
             #### Documentation
             - README updated if needed
@@ -101,14 +175,14 @@ jobs:
 
             ### 5. Review Output Guidelines
 
+            - Update the main comment with status and key concerns
             - Use inline comments for specific code issues (highlight exact lines)
-            - DO NOT post a global summary comment - it pollutes the conversation
-            - If you need to summarize, keep it brief and focused on remaining critical issues only
+            - DO NOT post additional global summary comments - it pollutes the conversation
             - Mark addressed points as outdated when possible
 
             ### 6. Final Verdict
 
-            At the end, provide a brief verdict:
+            At the end, update the main comment with your verdict:
             - **APPROVED** - Ready for merge
             - **CHANGES REQUESTED** - Needs modifications before merge
             - **COMMENTED** - Notes provided, no blocking issues

@@ -15,17 +15,32 @@ app.add_typer(workflow_app, name="workflow")
 
 @workflow_app.command("add")
 def workflow_add(
-    name: str,
+    name: str | None = None,
+    all: bool = typer.Option(False, "--all", "-a", help="Add all bundled workflows"),
     path: Path = typer.Option(None, "--path", help="Target directory"),
 ) -> None:
     """Add a workflow to your project."""
     target_path = (path or Path(os.getcwd())) / ".github" / "workflows"
     manager = WorkflowManager(target_path)
 
-    if manager.add_workflow(name):
-        typer.echo(f"Added workflow: {name}")
+    if all:
+        bundled = manager.get_bundled_workflows()
+        installed = manager.get_installed_workflows()
+        for wf in bundled:
+            if wf not in installed:
+                if manager.add_workflow(wf):
+                    typer.echo(f"Added workflow: {wf}")
+                else:
+                    typer.echo(f"Error: Failed to add {wf}")
+        typer.echo("Done. Added all workflows.")
+    elif name:
+        if manager.add_workflow(name):
+            typer.echo(f"Added workflow: {name}")
+        else:
+            typer.echo(f"Error: Workflow '{name}' not found in bundled workflows")
+            raise typer.Exit(code=1)
     else:
-        typer.echo(f"Error: Workflow '{name}' not found in bundled workflows")
+        typer.echo("Error: Specify a workflow name or use --all")
         raise typer.Exit(code=1)
 
 

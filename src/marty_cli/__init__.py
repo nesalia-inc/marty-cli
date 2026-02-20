@@ -46,17 +46,35 @@ def workflow_add(
 
 @workflow_app.command("update")
 def workflow_update(
-    name: str,
+    name: str | None = None,
+    all: bool = typer.Option(False, "--all", "-a", help="Update all installed workflows"),
     path: Path = typer.Option(None, "--path", help="Target directory"),
 ) -> None:
     """Update an existing workflow."""
     target_path = (path or Path(os.getcwd())) / ".github" / "workflows"
     manager = WorkflowManager(target_path)
 
-    if manager.update_workflow(name):
-        typer.echo(f"Updated workflow: {name}")
+    if all:
+        installed = manager.get_installed_workflows()
+        bundled = manager.get_bundled_workflows()
+        to_update = [wf for wf in installed if wf in bundled]
+        if not to_update:
+            typer.echo("No workflows to update.")
+            return
+        for wf in to_update:
+            if manager.update_workflow(wf):
+                typer.echo(f"Updated workflow: {wf}")
+            else:
+                typer.echo(f"Error: Failed to update {wf}")
+        typer.echo(f"Done. Updated {len(to_update)} workflow(s).")
+    elif name:
+        if manager.update_workflow(name):
+            typer.echo(f"Updated workflow: {name}")
+        else:
+            typer.echo(f"Error: Workflow '{name}' is not installed or not found in bundled workflows")
+            raise typer.Exit(code=1)
     else:
-        typer.echo(f"Error: Workflow '{name}' is not installed or not found in bundled workflows")
+        typer.echo("Error: Specify a workflow name or use --all")
         raise typer.Exit(code=1)
 
 

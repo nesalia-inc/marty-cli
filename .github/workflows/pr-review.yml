@@ -1,9 +1,8 @@
-# Test re-run
+# Test re-run v2
 name: PR Review
 
 on:
   pull_request:
-    types: [synchronize, ready_for_review, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}

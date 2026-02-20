@@ -18,27 +18,34 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Dismiss old reviews
-        run: |
-          # Fetch existing reviews
-          reviews=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews --jq '.[].id' 2>/dev/null || true)
-
-          # Dismiss each review
-          for review_id in $reviews; do
-            if [ -n "$review_id" ]; then
-              gh api -X PUT repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/$review_id/dismissals \
-                -f message="New commit pushed - creating fresh review" || true
-            fi
-          done
-        env:
-          GH_TOKEN: ${{ secrets.MARTY_TOKEN }}
-
       - name: Generate Marty token
         id: marty-token
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.MARTY_APP_ID }}
           private-key: ${{ secrets.MARTY_APP_PRIVATE_KEY }}
+
+      - name: Dismiss old Marty reviews
+        run: |
+          # Fetch existing reviews from Marty bot only
+          reviews=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+            --jq '.[] | select(.user.type == "Bot") | .id' 2>/dev/null || echo "")
+
+          if [ -z "$reviews" ]; then
+            echo "No existing bot reviews to dismiss"
+            exit 0
+          fi
+
+          # Dismiss each bot review
+          for review_id in $reviews; do
+            echo "Dismissing review $review_id"
+            if ! gh api -X PUT repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/$review_id/dismissals \
+              -f message="New commit pushed - creating fresh review"; then
+              echo "Warning: Failed to dismiss review $review_id"
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ steps.marty-token.outputs.token }}
 
       - name: Run Marty PR Review
         uses: nesalia-inc/marty-action@1.0.0
@@ -99,9 +106,9 @@ jobs:
 
             Only post GitHub comments - don't submit review text as messages.
 
-IMPORTANT: Before creating your review, check if there are already existing reviews on this PR.
-If previous reviews exist, understand what issues were already raised and focus only on NEW changes and remaining issues.
-Do not repeat points that were already addressed in previous commits.
+            IMPORTANT: Before creating your review, check if there are already existing reviews on this PR.
+            If previous reviews exist, understand what issues were already raised and focus only on NEW changes and remaining issues.
+            Do not repeat points that were already addressed in previous commits.
 
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"

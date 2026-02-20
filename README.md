@@ -1,12 +1,38 @@
-# marty-cli
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/marty.png">
+    <source media="(prefers-color-scheme: light)" srcset="public/marty.png">
+    <img src="public/marty.png" alt="marty-cli" width="150" height="150" style="border-radius: 50%;">
+  </picture>
+</p>
 
-<img src="https://raw.githubusercontent.com/nesalia-inc/marty-cli/refs/heads/main/.github/banner.png" height="150">
+<h1 align="center">marty-cli</h1>
 
-[![PyPI Version](https://img.shields.io/pypi/v/marty-cli)](https://pypi.org/project/marty-cli/)
-[![Python](https://img.shields.io/pypi/pyversions/marty-cli?logo=python)](https://pypi.org/project/marty-cli/)
-[![Tests](https://img.shields.io/github/actions/workflow/status/nesalia-inc/marty-cli/ruff?label=tests)](https://github.com/nesalia-inc/marty-cli/actions)
+<p align="center">
+  <a href="https://pypi.org/project/marty-cli/">
+    <img src="https://img.shields.io/pypi/v/marty-cli" alt="PyPI Version">
+  </a>
+  <a href="https://pypi.org/project/marty-cli/">
+    <img src="https://img.shields.io/pypi/pyversions/marty-cli?logo=python" alt="Python">
+  </a>
+  <a href="https://github.com/nesalia-inc/marty-cli/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/nesalia-inc/marty-cli/ruff?label=tests" alt="Tests">
+  </a>
+  <a href="https://vercel.com/?utm_source=nesalia&utm_campaign=oss">
+    <img src="https://img.shields.io/badge/Hosted-Vercel-black" alt="Vercel">
+  </a>
+  <a href="https://www.npmjs.com/package/marty-cli">
+    <img src="https://img.shields.io/npm/dt/marty-cli" alt="NPM">
+  </a>
+  <a href="https://github.com/nesalia-inc/marty-cli/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/nesalia-inc/marty-cli" alt="License">
+  </a>
+  <a href="https://discord.gg/nesalia">
+    <img src="https://img.shields.io/discord/123456789" alt="Discord">
+  </a>
+</p>
 
-CLI tool to manage Marty actions workflows. Add bundled workflows with one command.
+> CLI tool to manage Marty actions workflows. Add bundled workflows with one command.
 
 ## Requirements
 
@@ -57,26 +83,33 @@ marty-cli workflow add issue-discussion --path /my/project
 - `pr-fix` - Marty fixes PR issues when asked ("fix")
 - `pr-review` - Auto review PRs
 
-## Development
+## Getting Started
 
 ```bash
-# Clone and install
-git clone https://github.com/nesalia-inc/marty-cli.git
-cd marty-cli
+# Quick start - add all workflows
+marty-cli workflow add --all
 
-# Install dependencies
-uv sync --extra dev
-
-# Run linter
-ruff check .
-
-# Run type checker
-mypy src
-
-# Run tests
-pytest
+# Or add specific workflows
+marty-cli workflow add issue-discussion
+marty-cli workflow add pr-review
 ```
+
+## Community
+
+Join our community on [Discord](https://discord.gg/nesalia) for support and discussions.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Author
+
+- **Nesalia Inc.**
+
+## Security
+
+If you discover any security vulnerabilities, please send an e-mail to security@nesalia.com.
 
 ## License
 
-MIT
+MIT License - see the [LICENSE](LICENSE) file for details.

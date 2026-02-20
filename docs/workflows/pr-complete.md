@@ -81,6 +81,8 @@ Provide senior developer-level review on each PR update, ensuring production rea
 2. **UPDATE that comment** with new information - do NOT create new comments
 3. Only post inline comments for specific code issues
 
+**Fallback**: If main comment doesn't exist (e.g., `opened` workflow failed), create it first, then continue with update.
+
 This ensures:
 - No duplicate comments
 - Clean conversation flow
@@ -226,29 +228,39 @@ permissions:
 - `WebFetch` - Up-to-date information from web
 - `git` - Version control operations
 
-### Finding Main Comment
+### Finding and Updating Main Comment
+
+The comment ID is found each time by searching for the unique marker in the comment body:
 
 ```bash
-# Find Marty's main review comment
-gh api repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments \
-  --jq '.[] | select(.user.type == "Bot" and .body | contains("[Marty Review"))'
-```
-
-### Updating Main Comment
-
-Use `gh pr comment --edit-last` to update the main comment:
-
-```bash
-# First, find the comment ID
+# Find Marty's main review comment and get its ID
+# Note: GitHub Apps appear as user.type == "Bot"
 COMMENT_ID=$(gh api repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments \
-  --jq '.[] | select(.user.type == "Bot" and .body | contains("[Marty Review")) | .id')
-
-# Update the comment
-gh api -X PATCH repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments/$COMMENT_ID \
-  -f body="New content here"
+  --jq '.[] | select(.user.type == "Bot" and .body | contains("[Marty Review #'${PR_NUMBER}'")) | .id')
 ```
 
-Or use the workflow step to find and update:
+Then **edit (PATCH)** the same comment - this updates the content while keeping the same comment ID:
+
+```bash
+# Update the comment (PATCH keeps same comment ID)
+gh api -X PATCH repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments/$COMMENT_ID \
+  -f body="Updated content with same [Marty Review #${PR_NUMBER}] marker"
+```
+
+**Key points**:
+- The marker `[Marty Review #<PR_NUMBER>]` stays in the comment body at each update
+- The comment ID remains the same because we PATCH (edit) rather than POST (create)
+- GitHub App users appear as `user.type == "Bot"` in the API
+
+### Concurrency
+
+To prevent conflicts when multiple runs happen simultaneously, use GitHub Actions concurrency:
+
+```yaml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+```
 
 ### Marking Comments as Outdated
 

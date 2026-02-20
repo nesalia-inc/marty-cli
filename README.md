@@ -1,9 +1,8 @@
 # marty-cli
 
 [![PyPI Version](https://img.shields.io/pypi/v/marty-cli)](https://pypi.org/project/marty-cli/)
-[![Python Version](https://img.shields.io/pypi/pyversions/marty-cli)](https://pypi.org/project/marty-cli/)
-[![Coverage](https://img.shields.io/codecov/c/github/nesalia-inc/marty-cli?logo=codecov)](https://app.codecov.io/gh/nesalia-inc/marty-cli)
-[![CI](https://github.com/nesalia-inc/marty-cli/actions/workflows/ruff.yml/badge.svg)](https://github.com/nesalia-inc/marty-cli/actions)
+[![Python](https://img.shields.io/pypi/pyversions/marty-cli?logo=python)](https://pypi.org/project/marty-cli/)
+[![Tests](https://img.shields.io/github/actions/workflow/status/nesalia-inc/marty-cli/ruff?label=tests)](https://github.com/nesalia-inc/marty-cli/actions)
 
 CLI tool to manage Marty actions workflows. Add bundled workflows with one command.
 

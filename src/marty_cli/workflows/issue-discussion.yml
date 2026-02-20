@@ -71,6 +71,8 @@ jobs:
             - Ask clarifying questions if something is unclear
             - Be friendly and professional
             - Don't mention that you're an AI (just be helpful)
+            - **ALWAYS use markdown code blocks for code**: ```language\ncode here\n```
+            - Format code properly with triple backticks and language identifier
 
           claude_args: |
             --allowedTools "Bash(gh:*),Read"

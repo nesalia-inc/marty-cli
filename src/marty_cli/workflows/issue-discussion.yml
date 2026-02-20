@@ -59,11 +59,13 @@ jobs:
             gh issue comment $ISSUE_NUMBER --body "Your response here"
             ```
 
-            **If your response is long or contains special characters**, create a temporary file first:
+            **If your response is long or contains special characters**, create a temporary markdown file first:
             ```bash
-            echo "Your multi-line response here" > /tmp/comment.txt
-            gh issue comment $ISSUE_NUMBER --body-file /tmp/comment.txt
-            rm /tmp/comment.txt
+            cat > /tmp/comment.md << 'EOF'
+            Your multi-line response here in **markdown**
+            EOF
+            gh issue comment $ISSUE_NUMBER --body-file /tmp/comment.md
+            rm /tmp/comment.md
             ```
 
             **IMPORTANT:**

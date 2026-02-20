@@ -19,26 +19,27 @@ The system consists of four distinct phases that work together to provide compre
 
 ### Purpose
 
-Perform initial analysis of the PR and set up tracking for future interactions.
+Perform initial analysis of the PR and set up the main tracking comment.
 
 ### Actions
 
 - Analyze the PR content (title, description, changed files)
 - Add appropriate labels (e.g., bug, enhancement, security)
 - Assign reviewers if needed
-- Create a main tracking comment that will be updated throughout the lifecycle
+- **Create the main tracking comment** that will be updated throughout the lifecycle
 
 ### Technical Implementation
 
 1. **Main Comment Strategy**: Instead of using PR description (which would overwrite user content), create a dedicated comment with a unique identifier.
 
-2. **Finding the Main Comment**: On subsequent runs, search for comments by the Marty bot containing a unique marker (e.g., `[Marty Review #<PR_NUMBER>]`).
+2. **Unique Marker**: Use a marker like `[Marty Review #<PR_NUMBER>]` to identify the main comment.
 
-3. **Update Pattern**: The main comment contains:
+3. **Comment Structure**: The main comment contains:
    - PR overview and summary
    - Current status (In Progress / Changes Requested / Approved)
    - Key concerns to address
    - Progress tracking (what's been addressed)
+   - Last updated timestamp
 
 ### Example Comment Structure
 
@@ -67,11 +68,23 @@ Perform initial analysis of the PR and set up tracking for future interactions.
 
 ## Phase 2: Continuous Review
 
-**Trigger**: On PR events (`opened`, `synchronize`, `ready_for_review`, `reopened`)
+**Trigger**: On PR events (`synchronize`, `ready_for_review`, `reopened`)
 
 ### Purpose
 
 Provide senior developer-level review on each PR update, ensuring production readiness.
+
+### Key Principle: Update, Don't Create
+
+**IMPORTANT**: On each push (synchronize event), Marty must:
+1. **Find the existing main comment** using the unique marker `[Marty Review #<PR_NUMBER>]`
+2. **UPDATE that comment** with new information - do NOT create new comments
+3. Only post inline comments for specific code issues
+
+This ensures:
+- No duplicate comments
+- Clean conversation flow
+- Single source of truth for PR status
 
 ### Features
 
@@ -221,6 +234,22 @@ gh api repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments \
   --jq '.[] | select(.user.type == "Bot" and .body | contains("[Marty Review"))'
 ```
 
+### Updating Main Comment
+
+Use `gh pr comment --edit-last` to update the main comment:
+
+```bash
+# First, find the comment ID
+COMMENT_ID=$(gh api repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments \
+  --jq '.[] | select(.user.type == "Bot" and .body | contains("[Marty Review")) | .id')
+
+# Update the comment
+gh api -X PATCH repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments/$COMMENT_ID \
+  -f body="New content here"
+```
+
+Or use the workflow step to find and update:
+
 ### Marking Comments as Outdated
 
 GitHub marks comments as outdated when:
@@ -233,10 +262,10 @@ GitHub marks comments as outdated when:
 
 | Event | Type | Action |
 |-------|------|--------|
-| `pull_request` | `opened` | Initial Analysis |
-| `pull_request` | `synchronize` | Continuous Review |
-| `pull_request` | `ready_for_review` | Continuous Review |
-| `pull_request` | `reopened` | Continuous Review |
+| `pull_request` | `opened` | Create main comment |
+| `pull_request` | `synchronize` | Update main comment |
+| `pull_request` | `ready_for_review` | Update main comment |
+| `pull_request` | `reopened` | Update main comment |
 | `issue_comment` | `created` | Discussion / Fix |
 | `pull_request_review_comment` | `created` | Discussion |
 | `workflow_dispatch` | - | Manual Review |

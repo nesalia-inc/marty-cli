@@ -18,17 +18,8 @@
   <a href="https://github.com/nesalia-inc/marty-cli/actions">
     <img src="https://img.shields.io/github/actions/workflow/status/nesalia-inc/marty-cli/ruff?label=tests" alt="Tests">
   </a>
-  <a href="https://vercel.com/?utm_source=nesalia&utm_campaign=oss">
-    <img src="https://img.shields.io/badge/Hosted-Vercel-black" alt="Vercel">
-  </a>
-  <a href="https://www.npmjs.com/package/marty-cli">
-    <img src="https://img.shields.io/npm/dt/marty-cli" alt="NPM">
-  </a>
   <a href="https://github.com/nesalia-inc/marty-cli/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/nesalia-inc/marty-cli" alt="License">
-  </a>
-  <a href="https://discord.gg/nesalia">
-    <img src="https://img.shields.io/discord/123456789" alt="Discord">
   </a>
 </p>
 
@@ -93,10 +84,6 @@ marty-cli workflow add --all
 marty-cli workflow add issue-discussion
 marty-cli workflow add pr-review
 ```
-
-## Community
-
-Join our community on [Discord](https://discord.gg/nesalia) for support and discussions.
 
 ## Contributing
 

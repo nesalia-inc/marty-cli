@@ -48,10 +48,10 @@ jobs:
             COMMENT_BODY="# Marty Review #$PR_NUMBER
 
 ## Status
-🔄 Initializing...
+Initializing...
 
 ---
-*Last updated: $(date -u +"%Y-%m-%d %H:%M UTC")*"
+Last updated: $(date -u +"%Y-%m-%d %H:%M UTC")"
 
             COMMENT_ID=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/comments \
               -f body="$COMMENT_BODY" \
@@ -100,15 +100,15 @@ jobs:
             [Your summary of the PR]
 
             ## Status
-            [🟡 In Progress / 🔴 Changes Requested / 🟢 Approved]
+            [In Progress / Changes Requested / Approved]
 
             ## Key Concerns
             - [ ] [Issue 1]
             - [ ] [Issue 2]
 
             ## Progress
-            - ✅ [Fixed issue]
-            - 🔄 [In progress]
+            - [Fixed issue]
+            - [In progress]
 
             ---
             *Last updated: $(date -u +"%Y-%m-%d %H:%M UTC")*
